@@ -1,4 +1,4 @@
-import { initializeApp, cert } from 'firebase-admin/app';
+import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 
@@ -6,7 +6,7 @@ import { getFirestore } from 'firebase-admin/firestore';
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
 
 // Cek agar tidak inisialisasi berulang kali
-if (!initializeApp.length) {
+if (!getApps().length) {
   initializeApp({
     credential: cert(serviceAccount)
   });
@@ -27,28 +27,31 @@ export default async function handler(req, res) {
       displayName: name,
     });
     
-    // 2. Siapkan data untuk disimpan di Firestore
+    // 2. Tentukan apakah user adalah admin
+    const isAdmin = ['poopandastore@gmail.com', 'kucingmona@gmail.com'].includes(email);
+    
+    // 3. Siapkan data untuk disimpan di Firestore
     const userData = {
       name: name,
       phone: phone,
       email: email,
-      tier: 'standard', // Tier default untuk pengguna baru
+      tier: isAdmin ? 'pro' : 'standard', // Admin langsung dapat tier pro
       generationCount: 0,
       usageResetDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1), // Kuota akan direset awal bulan depan
-      registeredAt: new Date()
+      registeredAt: new Date(),
+      isAdmin: isAdmin
     };
 
-    // 3. Buat dokumen di Firestore dengan ID yang sama dengan ID user
+    // 4. Buat dokumen di Firestore dengan ID yang sama dengan ID user
     const db = getFirestore();
     await db.collection('users').doc(userRecord.uid).set(userData);
 
     return res.status(200).json({ uid: userRecord.uid, email: userRecord.email });
   } catch (error) {
     console.error('Error creating new user:', error);
-    // Memberikan pesan error yang lebih spesifik jika email sudah ada
     if (error.code === 'auth/email-already-exists') {
       return res.status(400).json({ error: 'Email ini sudah terdaftar. Silakan gunakan email lain.' });
     }
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: 'Terjadi kesalahan internal di server.' });
   }
 }
