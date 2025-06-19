@@ -173,12 +173,13 @@
     <script type="module">
         // --- FIREBASE INITIALIZATION ---
         const firebaseConfig = {
-            apiKey: "GANTI_DENGAN_API_KEY_ANDA",
-            authDomain: "GANTI_DENGAN_AUTH_DOMAIN_ANDA",
-            projectId: "GANTI_DENGAN_PROJECT_ID_ANDA",
-            storageBucket: "GANTI_DENGAN_STORAGE_BUCKET_ANDA",
-            messagingSenderId: "GANTI_DENGAN_SENDER_ID_ANDA",
-            appId: "GANTI_DENGAN_APP_ID_ANDA"
+            apiKey: "AIzaSyDGti4p7YW-TnkoBya5a987ZqAAoz1hx-M",
+            authDomain: "ebookgenpro.firebaseapp.com",
+            projectId: "ebookgenpro",
+            storageBucket: "ebookgenpro.firebasestorage.app",
+            messagingSenderId: "65822110885",
+            appId: "1:65822110885:web:3a430b2f1b3341aef9094c",
+            measurementId: "G-JV13H8GSQX"
         };
         
         const firebaseScript = document.createElement('script');
