@@ -288,10 +288,8 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ name, phone, email, password })
                     });
-
-                    // PERBAIKAN: Logika error handling yang lebih baik
+                    
                     if (!response.ok) {
-                        // Coba baca sebagai JSON, jika gagal, baca sebagai teks
                         let errorMessage = 'Terjadi kesalahan saat registrasi.';
                         try {
                             const err = await response.json();
