@@ -61,6 +61,8 @@
         #auth-view a { color: #3b82f6; cursor: pointer; text-decoration: underline; }
         .admin-area { border: 2px dashed #eab308; margin-top: 2rem; padding: 1.5rem; border-radius: 0.5rem; background-color: #fefce8; }
         .admin-area h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; }
+        #title-suggestion-list li { padding: 0.75rem; cursor: pointer; border-radius: 0.25rem; }
+        #title-suggestion-list li:hover { background-color: #f1f5f9; }
     </style>
 </head>
 <body>
@@ -127,6 +129,7 @@
                     <span>Tambah</span>
                 </button>
             </div>
+
             <div>
                 <h2>Antrean Ebook</h2>
                 <div class="table-container">
@@ -173,34 +176,34 @@
     <script type="module">
         // --- FIREBASE INITIALIZATION ---
         const firebaseConfig = {
-            apiKey: "AIzaSyDGti4p7YW-TnkoBya5a987ZqAAoz1hx-M",
-            authDomain: "ebookgenpro.firebaseapp.com",
-            projectId: "ebookgenpro",
-            storageBucket: "ebookgenpro.firebasestorage.app",
-            messagingSenderId: "65822110885",
-            appId: "1:65822110885:web:3a430b2f1b3341aef9094c",
-            measurementId: "G-JV13H8GSQX"
+            apiKey: "GANTI_DENGAN_API_KEY_ANDA",
+            authDomain: "GANTI_DENGAN_AUTH_DOMAIN_ANDA",
+            projectId: "GANTI_DENGAN_PROJECT_ID_ANDA",
+            storageBucket: "GANTI_DENGAN_STORAGE_BUCKET_ANDA",
+            messagingSenderId: "GANTI_DENGAN_SENDER_ID_ANDA",
+            appId: "GANTI_DENGAN_APP_ID_ANDA"
         };
         
         const firebaseScript = document.createElement('script');
         firebaseScript.type = 'module';
         firebaseScript.innerHTML = `
             import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-            import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
-            window.initializeApp = initializeApp;
-            window.getAuth = getAuth;
+            import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, getIdToken } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+            
+            const app = initializeApp(${JSON.stringify(firebaseConfig)});
+            window.auth = getAuth(app);
             window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
             window.signInWithEmailAndPassword = signInWithEmailAndPassword;
             window.onAuthStateChanged = onAuthStateChanged;
             window.signOut = signOut;
-            document.dispatchEvent(new Event('firebase-auth-ready'));
+            window.getIdToken = getIdToken;
+
+            document.dispatchEvent(new Event('firebase-ready'));
         `;
         document.head.appendChild(firebaseScript);
 
-        document.addEventListener('firebase-auth-ready', () => {
-            const app = window.initializeApp(firebaseConfig);
-            const auth = window.getAuth(app);
-            
+        // --- GLOBAL APP LOGIC ---
+        document.addEventListener('firebase-ready', () => {
             lucide.createIcons();
 
             let ebookQueue = [];
@@ -210,32 +213,449 @@
             const loadingScreen = document.getElementById('loading-screen');
             const authView = document.getElementById('auth-view');
             const appView = document.getElementById('app-view');
-            // ... (sisa deklarasi elemen DOM)
+            const loginContainer = document.getElementById('login-container');
+            const registerContainer = document.getElementById('register-container');
+            const loginForm = document.getElementById('login-form');
+            const registerForm = document.getElementById('register-form');
+            const showRegisterLink = document.getElementById('show-register');
+            const showLoginLink = document.getElementById('show-login');
+            const userEmailDisplay = document.getElementById('user-email');
+            const logoutBtn = document.getElementById('logout-btn');
+            const adminAreaBtn = document.getElementById('admin-area-btn');
+            const adminView = document.getElementById('admin-view');
+            const adminUserList = document.getElementById('admin-user-list');
+            const userTierDisplay = document.getElementById('user-tier');
+            const userQuotaDisplay = document.getElementById('user-quota');
+
+            const topicInput = document.getElementById('topic');
+            const suggestTopicBtn = document.getElementById('suggest-topic-btn');
+            const styleSelect = document.getElementById('style');
+            const personaSelect = document.getElementById('persona');
+            const addToQueueBtn = document.getElementById('add-to-queue-btn');
+            const queueTableBody = document.getElementById('queue-table-body');
+            const emptyQueueMsg = document.getElementById('empty-queue-msg');
+            const processQueueBtn = document.getElementById('process-queue-btn');
+
+            const ebookModal = document.getElementById('ebook-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalBody = document.getElementById('modal-body-content');
+            const modalFooter = document.getElementById('modal-footer-content');
+            const closeEbookModalBtn = document.getElementById('close-ebook-modal');
 
             // --- AUTH LOGIC ---
-            onAuthStateChanged(auth, async user => {
+            onAuthStateChanged(window.auth, async (user) => {
                 loadingScreen.classList.add('hidden');
                 if (user) {
+                    await fetchAndDisplayUserData(user);
                     authView.classList.add('hidden');
                     appView.classList.remove('hidden');
-                    document.getElementById('user-email').textContent = user.email;
-                    
-                    await fetchAndDisplayUserData(user);
+                    userEmailDisplay.textContent = user.email;
 
                     if (currentUserData.isAdmin) {
-                        document.getElementById('admin-area-btn').classList.remove('hidden');
+                        adminAreaBtn.classList.remove('hidden');
                     } else {
-                        document.getElementById('admin-area-btn').classList.add('hidden');
-                        document.getElementById('admin-view').classList.add('hidden');
+                        adminAreaBtn.classList.add('hidden');
+                        adminView.classList.add('hidden');
                     }
                 } else {
                     authView.classList.remove('hidden');
                     appView.classList.add('hidden');
+                    currentUserData = {}; // Reset user data on logout
+                }
+            });
+            
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const email = loginForm['login-email'].value;
+                const password = loginForm['login-password'].value;
+                signInWithEmailAndPassword(window.auth, email, password)
+                    .catch(error => {
+                        console.error("Login error:", error.code);
+                        if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
+                            alert('Login Gagal: Email atau password salah. Silakan coba lagi atau register jika belum punya akun.');
+                        } else {
+                            alert(`Login Gagal: ${error.message}`);
+                        }
+                    });
+            });
+
+            registerForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const name = registerForm['register-name'].value;
+                const phone = registerForm['register-phone'].value;
+                const email = registerForm['register-email'].value;
+                const password = registerForm['register-password'].value;
+                
+                try {
+                    const response = await fetch('/api/register', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name, phone, email, password })
+                    });
+                    if (!response.ok) {
+                        const err = await response.json();
+                        throw new Error(err.error || 'Terjadi kesalahan saat registrasi.');
+                    }
+                    alert('Registrasi berhasil! Anda akan otomatis login setelah halaman dimuat ulang.');
+                    window.location.reload(); // Reload to trigger onAuthStateChanged
+                } catch(error) {
+                    alert(`Registrasi Gagal: ${error.message}`);
                 }
             });
 
-            // ... (sisa kode JavaScript akan saya sederhanakan untuk kejelasan)
-            // Kode lengkap akan ada di artifact terpisah jika diperlukan
+            logoutBtn.addEventListener('click', () => signOut(window.auth));
+            showRegisterLink.addEventListener('click', () => {
+                loginContainer.classList.add('hidden');
+                registerContainer.classList.remove('hidden');
+            });
+            showLoginLink.addEventListener('click', () => {
+                registerContainer.classList.add('hidden');
+                loginContainer.classList.remove('hidden');
+            });
+
+            async function fetchAndDisplayUserData(user) {
+                if (!user) return;
+                try {
+                    const token = await getIdToken(user);
+                    const response = await fetch('/api/get-user', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (!response.ok) throw new Error('Gagal memuat data pengguna.');
+                    currentUserData = await response.json();
+                    
+                    userTierDisplay.textContent = currentUserData.tier || 'standard';
+                    const limit = currentUserData.tier === 'pro' ? '1000' : '3';
+                    userQuotaDisplay.textContent = `${currentUserData.generationCount || 0} / ${limit}`;
+
+                } catch(error) {
+                    console.error("Error fetching user data:", error);
+                    userTierDisplay.textContent = 'Error';
+                    userQuotaDisplay.textContent = 'Error';
+                }
+            }
+            
+            // --- ADMIN AREA LOGIC ---
+            adminAreaBtn.addEventListener('click', async () => {
+                adminView.classList.toggle('hidden');
+                if (!adminView.classList.contains('hidden')) {
+                    loadAdminUsers();
+                }
+            });
+
+            async function loadAdminUsers() {
+                 adminUserList.innerHTML = '<tr><td colspan="5" style="text-align:center;"><div class="spinner"></div> Memuat data...</td></tr>';
+                try {
+                    const token = await getIdToken(window.auth.currentUser);
+                    const response = await fetch('/api/admin/users', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (!response.ok) throw new Error('Gagal mengambil data pengguna.');
+                    const users = await response.json();
+
+                    if(users.length > 0) {
+                        adminUserList.innerHTML = users.map(user => `
+                            <tr>
+                                <td>${user.name || '-'}</td>
+                                <td>${user.email || '-'}</td>
+                                <td>${user.phone || '-'}</td>
+                                <td>
+                                    <select data-userid="${user.id}" class="tier-select" style="height: 36px; padding: 0.25rem;">
+                                        <option value="standard" ${user.tier === 'standard' ? 'selected' : ''}>Standard</option>
+                                        <option value="pro" ${user.tier === 'pro' ? 'selected' : ''}>Pro</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <button class="btn btn-red delete-user-btn" data-userid="${user.id}" style="padding: 0.25rem 0.5rem;">Hapus</button>
+                                </td>
+                            </tr>
+                        `).join('');
+                    } else {
+                         adminUserList.innerHTML = '<tr><td colspan="5" style="text-align:center;">Belum ada pengguna terdaftar.</td></tr>';
+                    }
+                    attachAdminActionListeners();
+                } catch (error) {
+                    console.error('Error fetching users:', error);
+                    adminUserList.innerHTML = `<tr><td colspan="5" style="color:red; text-align:center;">${error.message}</td></tr>`;
+                }
+            }
+            
+            function attachAdminActionListeners() {
+                document.querySelectorAll('.tier-select').forEach(select => {
+                    select.addEventListener('change', async (e) => {
+                        const userId = e.target.dataset.userid;
+                        const newTier = e.target.value;
+                        if(confirm(`Anda yakin ingin mengubah paket pengguna ini menjadi ${newTier}?`)) {
+                            try {
+                                const token = await getIdToken(window.auth.currentUser);
+                                await fetch('/api/admin/update-user', {
+                                    method: 'POST',
+                                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ userId, newTier })
+                                });
+                                alert('Paket pengguna berhasil diperbarui.');
+                            } catch(error) {
+                                alert('Gagal memperbarui paket.');
+                                console.error(error);
+                            }
+                        } else {
+                            e.target.value = e.target.options[e.target.selectedIndex === 0 ? 1: 0].value; // revert
+                        }
+                    });
+                });
+
+                document.querySelectorAll('.delete-user-btn').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                         const userId = e.target.closest('button').dataset.userid;
+                         if(confirm('PERINGATAN: Anda akan menghapus pengguna ini secara permanen. Aksi ini tidak bisa dibatalkan. Lanjutkan?')) {
+                             try {
+                                const token = await getIdToken(window.auth.currentUser);
+                                await fetch('/api/admin/delete-user', {
+                                    method: 'POST',
+                                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ userId })
+                                });
+                                alert('Pengguna berhasil dihapus.');
+                                loadAdminUsers(); // Refresh list
+                            } catch(error) {
+                                alert('Gagal menghapus pengguna.');
+                                console.error(error);
+                            }
+                         }
+                    });
+                });
+            }
+
+            // --- MAIN APP LOGIC ---
+            topicInput.addEventListener('input', () => {
+                suggestTopicBtn.disabled = topicInput.value.trim() === '';
+            });
+
+            addToQueueBtn.addEventListener('click', addTopicToQueue);
+            processQueueBtn.addEventListener('click', processQueue);
+            closeEbookModalBtn.addEventListener('click', () => ebookModal.style.display = 'none');
+            window.addEventListener('click', (event) => {
+                if (event.target == ebookModal) ebookModal.style.display = 'none';
+            });
+            
+            function addTopicToQueue() {
+                const topic = topicInput.value.trim();
+                if (topic) {
+                    ebookQueue.push({ id: Date.now(), topic, style: styleSelect.value, persona: personaSelect.value, status: 'Menunggu', htmlContent: null });
+                    topicInput.value = '';
+                    topicInput.focus();
+                    renderQueueTable();
+                }
+            }
+
+            function renderQueueTable() {
+                emptyQueueMsg.style.display = ebookQueue.length === 0 ? 'block' : 'none';
+                processQueueBtn.disabled = isProcessing || ebookQueue.length === 0;
+                
+                queueTableBody.innerHTML = ebookQueue.map(item => `
+                    <tr id="row-${item.id}" class="${item.status === 'Proses...' ? 'processing-row' : ''}">
+                        <td>${item.topic}</td>
+                        <td>${item.style}</td>
+                        <td>${item.persona}</td>
+                        <td class="status-cell">${item.status === 'Proses...' ? '<div class="spinner"></div>' : ''} ${item.status}</td>
+                        <td class="action-cell">
+                            ${(item.status === 'Selesai' || item.status === 'Gagal (Contoh Dibuat)') ? `<button class="btn btn-green view-result-btn" data-id="${item.id}" style="padding: 0.25rem 0.5rem;"><i data-lucide="eye" style="width:16px;"></i></button>` : ''}
+                        </td>
+                    </tr>
+                `).join('');
+                lucide.createIcons();
+
+                document.querySelectorAll('.view-result-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        showEbookInModal(ebookQueue.find(q => q.id === parseInt(e.currentTarget.dataset.id)));
+                    });
+                });
+            }
+            
+            async function processQueue() {
+                const user = window.auth.currentUser;
+                if (!user) return alert('Silakan login ulang.');
+
+                const token = await getIdToken(user);
+                
+                isProcessing = true;
+                processQueueBtn.disabled = true;
+
+                for (const item of ebookQueue) {
+                    if (item.status === 'Menunggu') {
+                        updateItemStatus(item.id, 'Proses...');
+                        try {
+                            item.htmlContent = await generateEbook(item.topic, item.style, item.persona, token);
+                            updateItemStatus(item.id, 'Selesai');
+                            await fetchAndDisplayUserData(user); // Refresh quota
+                        } catch (error) {
+                            console.error(`Error for "${item.topic}":`, error);
+                            item.htmlContent = generateFallbackEbook(item.topic);
+                            updateItemStatus(item.id, 'Gagal (Cek Konsol)');
+                            alert(`Terjadi error saat memproses "${item.topic}": ${error.message}`);
+                        }
+                    }
+                }
+                
+                isProcessing = false;
+                processQueueBtn.disabled = ebookQueue.length === 0;
+            }
+
+            function updateItemStatus(id, status) {
+                const item = ebookQueue.find(q => q.id === id);
+                if (item) item.status = status;
+                renderQueueTable();
+            }
+
+            async function callApi(payload, token) {
+                const response = await fetch('/api/generate', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ userPayload: payload })
+                });
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || `HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            }
+            
+            async function suggestTopics() {
+                const idea = topicInput.value.trim();
+                if (!idea) return;
+                
+                modalTitle.textContent = "✨ Ide Topik Ebook";
+                modalBody.innerHTML = '<div class="spinner" style="margin: 2rem auto; display:block;"></div>';
+                modalFooter.innerHTML = '';
+                ebookModal.style.display = 'flex';
+
+                try {
+                    const token = await getIdToken(window.auth.currentUser);
+                    const prompt = `Berikan 5 ide topik ebook yang menarik berdasarkan kata kunci: "${idea}". Pisahkan setiap judul dengan baris baru. Jangan beri nomor atau tanda hubung.`;
+                    const result = await callApi({ contents: [{ role: "user", parts: [{ text: prompt }] }] }, token);
+                    const topics = result.candidates[0].content.parts[0].text.split('\n').filter(t => t.trim().length > 0);
+
+                    const topicList = document.createElement('ul');
+                    topicList.id = 'title-suggestion-list';
+                    topics.forEach(t => {
+                        const li = document.createElement('li');
+                        li.textContent = t.replace(/\"/g, '');
+                        li.onclick = () => {
+                            topicInput.value = li.textContent;
+                            ebookModal.style.display = 'none';
+                        };
+                        topicList.appendChild(li);
+                    });
+                    modalBody.innerHTML = '';
+                    modalBody.appendChild(topicList);
+                } catch (error) {
+                     modalBody.innerHTML = `<p style="color: red;">Gagal mendapatkan saran topik: ${error.message}</p>`;
+                }
+            }
+
+            function parseOutline(text) {
+                const lines = text.split('\n').filter(line => line.trim() !== '');
+                let title = "Judul Ebook";
+                const titleLine = lines.find(line => line.match(/\*\*?Judul\*\*?:\s*/i));
+                if (titleLine) title = titleLine.replace(/\*\*?Judul\*\*?:\s*/i, '').trim();
+                else {
+                    const firstLine = lines.find(line => !line.match(/\*\*?Bab\s*\d*:/i));
+                    if(firstLine) title = firstLine.trim();
+                }
+
+                const chapters = lines.filter(line => line.match(/\*\*?Bab\s*\d*:/i)).map(line => line.replace(/\*\*?Bab\s*\d*:\s*/i, '').trim());
+                if (chapters.length === 0) throw new Error("Gagal membuat outline bab.");
+                return { title, chapters };
+            }
+
+            function saveAsPdf() {
+                const element = document.getElementById('modal-ebook-content');
+                let fileName = 'ebook.pdf';
+                const ebookTitleElement = element.querySelector('.ebook-title');
+                if (ebookTitleElement) fileName = ebookTitleElement.textContent.trim().replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.pdf';
+                const opt = { margin: [0.5, 0.5, 0.5, 0.5], filename: fileName, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }, pagebreak: { mode: 'css', before: '.ebook-chapter' } };
+                html2pdf().set(opt).from(element).save();
+            }
+
+            function saveAsDocx() {
+                const element = document.getElementById('modal-ebook-content');
+                let fileName = 'ebook.docx';
+                const ebookTitleElement = element.querySelector('.ebook-title');
+                if (ebookTitleElement) fileName = ebookTitleElement.textContent.trim().replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.docx';
+                const content = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>${element.innerHTML}</body></html>`;
+                const converted = htmlDocx.asBlob(content);
+                saveAs(converted, fileName);
+            }
+            
+            function formatContent(text) {
+                const cleanedText = text.replace(/\n{2,}/g, '\n').replace(/\*/g,'');
+                const paragraphs = cleanedText.split('\n').map(p => p.trim()).filter(p => p.length > 0);
+                return paragraphs.map(p => `<p>${p}</p>`).join('');
+            }
+            
+            function generateFallbackEbook(topic) {
+                const title = `Contoh Ebook: ${topic}`;
+                const chapters = [ "Pendahuluan", "Konsep Kunci", "Studi Kasus", "Tantangan dan Solusi", "Kesimpulan" ];
+                const placeholderContent = "Ini adalah konten contoh yang ditampilkan karena terjadi kegagalan saat menghubungi server AI.";
+                const ebookData = chapters.map(chapterTitle => ({ title: chapterTitle, content: placeholderContent }));
+                return renderEbookToHtml(title, ebookData);
+            }
+
+            async function generateEbook(topic, style, persona, token) {
+                const promptOutline = `Buatkan outline TEKS SAJA untuk ebook dengan topik "${topic}". Beri judul yang menarik. Buat 5 bab. Format jawaban harus seperti ini, tanpa teks lain:\n**Judul:** [Judul Ebook Di Sini]\n**Bab 1:** [Judul Bab 1]\n**Bab 2:** [Judul Bab 2]\n**Bab 3:** [Judul Bab 3]\n**Bab 4:** [Judul Bab 4]\n**Bab 5:** [Judul Bab 5]`;
+                const outlineResult = await callApi({ contents: [{ role: "user", parts: [{ text: promptOutline }] }] }, token);
+                const outlineText = outlineResult.candidates[0].content.parts[0].text;
+                const { title, chapters } = parseOutline(outlineText);
+                
+                let ebookData = [];
+                for (const chapterTitle of chapters) {
+                    const contentPrompt = `Anda adalah seorang penulis dengan persona sebagai **${persona}**. Tulis konten yang bersih dan terformat dengan baik untuk bab buku berjudul "${chapterTitle}" dari ebook bertopik "${topic}". Gunakan gaya bahasa "${style}". Pastikan ada struktur paragraf yang jelas. Panjang tulisan sekitar 400-500 kata.`;
+                    const contentResult = await callApi({ contents: [{ role: "user", parts: [{ text: contentPrompt }] }] }, token);
+                    const chapterContent = contentResult.candidates[0].content.parts[0].text;
+                    ebookData.push({ title: chapterTitle, content: chapterContent });
+                }
+                return renderEbookToHtml(title, ebookData);
+            }
+            
+            function renderEbookToHtml(title, ebookData) {
+                let html = `<h1 class="ebook-title">${title}</h1>`;
+                html += `<div class="ebook-toc"><h3 class="ebook-chapter-title">Daftar Isi</h3><ul>`;
+                ebookData.forEach((chapter, index) => { html += `<li>Bab ${index + 1}: ${chapter.title}</li>`; });
+                html += `</ul></div>`;
+                ebookData.forEach((chapter, index) => {
+                    html += `<div class="ebook-chapter">
+                                <h2 class="ebook-chapter-title">Bab ${index + 1}: ${chapter.title}</h2>
+                                <div class="ebook-chapter-content">${formatContent(chapter.content)}</div>
+                             </div>`;
+                });
+                return html;
+            }
+
+            function showEbookInModal(item) {
+                const isFallback = item.status.includes('Contoh');
+                const ebookTitleMatch = item.htmlContent.match(/<h1 class="ebook-title">(.*?)<\/h1>/);
+                const ebookTitle = ebookTitleMatch ? ebookTitleMatch[1] : item.topic;
+
+                modalTitle.textContent = isFallback ? `Contoh: ${item.topic}` : ebookTitle;
+                modalBody.innerHTML = `<div id="modal-ebook-content">${item.htmlContent}</div>`;
+                
+                modalFooter.innerHTML = `
+                    <button id="modal-save-docx-btn" class="btn btn-orange">
+                        <i data-lucide="file-text"></i><span>Download (.docx)</span>
+                    </button>
+                     <button id="modal-save-pdf-btn" class="btn btn-green">
+                        <i data-lucide="download"></i><span>Simpan PDF</span>
+                    </button>
+                `;
+                lucide.createIcons();
+                
+                document.getElementById('modal-save-pdf-btn').addEventListener('click', saveAsPdf);
+                document.getElementById('modal-save-docx-btn').addEventListener('click', saveAsDocx);
+
+                ebookModal.style.display = 'flex';
+            }
         });
     </script>
 </body>
