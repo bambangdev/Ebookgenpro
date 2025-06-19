@@ -7,7 +7,7 @@ if (!initializeApp.length) {
   initializeApp({ credential: cert(serviceAccount) });
 }
 
-const ADMIN_EMAILS = ['poopandastore@gmail.com', 'kucingmona@gmail.com'];
+const ADMIN_EMAILS = ['poopandastore@gmail.com', 'ordivo10@gmail.com'];
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).end();
