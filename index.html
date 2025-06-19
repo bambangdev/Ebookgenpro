@@ -79,7 +79,10 @@
                 <input type="password" id="login-password" placeholder="Password" required>
                 <button type="submit" class="btn btn-indigo btn-full">Login</button>
             </form>
-            <p style="text-align:center; margin-top:1rem;">Belum punya akun? <a id="show-register">Register di sini</a></p>
+            <div style="display: flex; justify-content: space-between; margin-top: 1rem;">
+                <a id="show-register">Register di sini</a>
+                <a id="show-reset">Lupa Password?</a>
+            </div>
         </div>
         <div class="auth-container hidden" id="register-container">
             <h2 class="app-header">Register Akun Baru</h2>
@@ -90,7 +93,15 @@
                 <input type="password" id="register-password" placeholder="Password (min. 6 karakter)" required>
                 <button type="submit" class="btn btn-indigo btn-full">Register</button>
             </form>
-            <p style="text-align:center; margin-top:1rem;">Sudah punya akun? <a id="show-login">Login di sini</a></p>
+            <p style="text-align:center; margin-top:1rem;">Sudah punya akun? <a class="show-login-link">Login di sini</a></p>
+        </div>
+        <div class="auth-container hidden" id="reset-container">
+            <h2 class="app-header">Reset Password</h2>
+            <form id="reset-form" class="auth-form">
+                <input type="email" id="reset-email" placeholder="Masukkan Email Anda" required>
+                <button type="submit" class="btn btn-indigo btn-full">Kirim Link Reset</button>
+            </form>
+            <p style="text-align:center; margin-top:1rem;">Kembali ke <a class="show-login-link">Login</a></p>
         </div>
     </div>
 
@@ -188,7 +199,7 @@
         firebaseScript.type = 'module';
         firebaseScript.innerHTML = `
             import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-            import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, getIdToken } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+            import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, getIdToken, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
             
             const app = initializeApp(${JSON.stringify(firebaseConfig)});
             window.auth = getAuth(app);
@@ -197,6 +208,7 @@
             window.onAuthStateChanged = onAuthStateChanged;
             window.signOut = signOut;
             window.getIdToken = getIdToken;
+            window.sendPasswordResetEmail = sendPasswordResetEmail;
 
             document.dispatchEvent(new Event('firebase-ready'));
         `;
@@ -214,10 +226,13 @@
             const appView = document.getElementById('app-view');
             const loginContainer = document.getElementById('login-container');
             const registerContainer = document.getElementById('register-container');
+            const resetContainer = document.getElementById('reset-container');
             const loginForm = document.getElementById('login-form');
             const registerForm = document.getElementById('register-form');
+            const resetForm = document.getElementById('reset-form');
             const showRegisterLink = document.getElementById('show-register');
-            const showLoginLink = document.getElementById('show-login');
+            const showLoginLinks = document.querySelectorAll('.show-login-link');
+            const showResetLink = document.getElementById('show-reset');
             const userEmailDisplay = document.getElementById('user-email');
             const logoutBtn = document.getElementById('logout-btn');
             const adminAreaBtn = document.getElementById('admin-area-btn');
@@ -239,6 +254,7 @@
             const modalFooter = document.getElementById('modal-footer-content');
             const closeEbookModalBtn = document.getElementById('close-ebook-modal');
 
+            // --- AUTH LOGIC ---
             onAuthStateChanged(window.auth, async (user) => {
                 loadingScreen.classList.add('hidden');
                 if (user) {
@@ -307,14 +323,36 @@
                 }
             });
 
+            resetForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const email = resetForm['reset-email'].value;
+                sendPasswordResetEmail(window.auth, email)
+                    .then(() => {
+                        alert('Link reset password telah dikirim ke email Anda (jika terdaftar).');
+                    })
+                    .catch(error => {
+                        console.error("Reset password error:", error);
+                        alert('Gagal mengirim link reset. Silakan coba lagi.');
+                    });
+            });
+
             logoutBtn.addEventListener('click', () => signOut(window.auth));
             showRegisterLink.addEventListener('click', () => {
                 loginContainer.classList.add('hidden');
                 registerContainer.classList.remove('hidden');
+                resetContainer.classList.add('hidden');
             });
-            showLoginLink.addEventListener('click', () => {
+            showLoginLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    loginContainer.classList.remove('hidden');
+                    registerContainer.classList.add('hidden');
+                    resetContainer.classList.add('hidden');
+                });
+            });
+            showResetLink.addEventListener('click', () => {
+                loginContainer.classList.add('hidden');
                 registerContainer.classList.add('hidden');
-                loginContainer.classList.remove('hidden');
+                resetContainer.classList.remove('hidden');
             });
 
             async function fetchAndDisplayUserData(user) {
