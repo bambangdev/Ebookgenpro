@@ -1,13 +1,13 @@
-import { initializeApp, cert } from 'firebase-admin/app';
+import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
-if (!initializeApp.length) {
+if (!getApps().length) {
   initializeApp({ credential: cert(serviceAccount) });
 }
 
-const ADMIN_EMAILS = ['poopandastore@gmail.com', 'ordivo10@gmail.com'];
+const ADMIN_EMAILS = ['poopandastore@gmail.com', 'kucingmona@gmail.com'];
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).end();
