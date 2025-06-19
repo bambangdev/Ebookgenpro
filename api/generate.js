@@ -1,9 +1,9 @@
-import { initializeApp, cert } from 'firebase-admin/app';
+import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
-if (!initializeApp.length) {
+if (!getApps().length) {
   initializeApp({ credential: cert(serviceAccount) });
 }
 
@@ -31,23 +31,19 @@ export default async function handler(req, res) {
     const userData = userDoc.data();
     const now = new Date();
 
-    // Reset kuota jika sudah masuk bulan baru
-    if (now >= userData.usageResetDate.toDate()) {
-      userData.generationCount = 0;
-      userData.usageResetDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    if (userData.usageResetDate && now >= userData.usageResetDate.toDate()) {
       await userRef.update({ 
         generationCount: 0,
-        usageResetDate: userData.usageResetDate
+        usageResetDate: new Date(now.getFullYear(), now.getMonth() + 1, 1)
       });
+      userData.generationCount = 0;
     }
 
-    // Periksa kuota
     const limit = TIER_LIMITS[userData.tier] || 0;
     if (userData.generationCount >= limit) {
       return res.status(429).json({ error: 'Batas kuota generate Anda telah habis bulan ini.' });
     }
 
-    // Panggil Gemini API
     const apiKey = process.env.GEMINI_API_KEY;
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
@@ -56,8 +52,7 @@ export default async function handler(req, res) {
     });
 
     if (!response.ok) throw new Error('Gagal menghubungi Gemini API');
-
-    // Update kuota pengguna
+    
     await userRef.update({ generationCount: FieldValue.increment(1) });
     
     const data = await response.json();
