@@ -175,13 +175,12 @@
     
     <script type="module">
         const firebaseConfig = {
-            apiKey: "AIzaSyDGti4p7YW-TnkoBya5a987ZqAAoz1hx-M",
-            authDomain: "ebookgenpro.firebaseapp.com",
-            projectId: "ebookgenpro",
-            storageBucket: "ebookgenpro.firebasestorage.app",
-            messagingSenderId: "65822110885",
-            appId: "1:65822110885:web:3a430b2f1b3341aef9094c",
-            measurementId: "G-JV13H8GSQX"
+            apiKey: "GANTI_DENGAN_API_KEY_ANDA",
+            authDomain: "GANTI_DENGAN_AUTH_DOMAIN_ANDA",
+            projectId: "GANTI_DENGAN_PROJECT_ID_ANDA",
+            storageBucket: "GANTI_DENGAN_STORAGE_BUCKET_ANDA",
+            messagingSenderId: "GANTI_DENGAN_SENDER_ID_ANDA",
+            appId: "GANTI_DENGAN_APP_ID_ANDA"
         };
         
         const firebaseScript = document.createElement('script');
@@ -606,7 +605,7 @@
                 let ebookData = [];
                 for (const chapterTitle of chapters) {
                     const contentPrompt = `Anda adalah seorang penulis dengan persona sebagai **${persona}**. Tulis konten yang bersih dan terformat dengan baik untuk bab buku berjudul "${chapterTitle}" dari ebook bertopik "${topic}". Gunakan gaya bahasa "${style}". Pastikan ada struktur paragraf yang jelas. Panjang tulisan sekitar 400-500 kata.`;
-                    const contentResult = await callApi({ contents: [{ role: "user", parts: [{ text: promptOutline }] }] }, token);
+                    const contentResult = await callApi({ contents: [{ role: "user", parts: [{ text: contentPrompt }] }] }, token);
                     const chapterContent = contentResult.candidates[0].content.parts[0].text;
                     ebookData.push({ title: chapterTitle, content: chapterContent });
                 }
