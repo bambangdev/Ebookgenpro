@@ -8,7 +8,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:wght@400;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- PERBAIKAN: Atribut 'xintegrity' yang salah telah diubah menjadi 'integrity' yang benar -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" xintegrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://unpkg.com/html-docx-js/dist/html-docx.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -187,13 +186,13 @@
     
     <script type="module">
         const firebaseConfig = {
-          apiKey: "AIzaSyDGti4p7YW-TnkoBya5a987ZqAAoz1hx-M",
-          authDomain: "ebookgenpro.firebaseapp.com",
-          projectId: "ebookgenpro",
-          storageBucket: "ebookgenpro.firebasestorage.app",
-          messagingSenderId: "65822110885",
-          appId: "1:65822110885:web:3a430b2f1b3341aef9094c",
-          measurementId: "G-JV13H8GSQX"
+            apiKey: "AIzaSyDGti4p7YW-TnkoBya5a987ZqAAoz1hx-M",
+            authDomain: "ebookgenpro.firebaseapp.com",
+            projectId: "ebookgenpro",
+            storageBucket: "ebookgenpro.appspot.com",
+            messagingSenderId: "65822110885",
+            appId: "1:65822110885:web:3a430b2f1b3341aef9094c",
+            measurementId: "G-JV13H8GSQX"
         };
         
         const firebaseScript = document.createElement('script');
@@ -652,7 +651,7 @@
                 let ebookData = [];
                 for (const chapterTitle of chapters) {
                     const contentPrompt = `Anda adalah seorang penulis dengan persona sebagai **${persona}**. Tulis konten yang bersih dan terformat dengan baik untuk bab buku berjudul "${chapterTitle}" dari ebook bertopik "${topic}". Gunakan gaya bahasa "${style}". Pastikan ada struktur paragraf yang jelas. Panjang tulisan sekitar 400-500 kata.`;
-                    const contentResult = await callApi({ contents: [{ role: "user", parts: [{ text: promptOutline }] }] }, token);
+                    const contentResult = await callApi({ contents: [{ role: "user", parts: [{ text: contentPrompt }] }] }, token);
                     const chapterContent = contentResult.candidates[0].content.parts[0].text;
                     ebookData.push({ title: chapterTitle, content: chapterContent });
                 }
