@@ -202,7 +202,6 @@
         `;
         document.head.appendChild(firebaseScript);
 
-        // --- GLOBAL APP LOGIC ---
         document.addEventListener('firebase-ready', () => {
             lucide.createIcons();
 
@@ -242,7 +241,6 @@
             const modalFooter = document.getElementById('modal-footer-content');
             const closeEbookModalBtn = document.getElementById('close-ebook-modal');
 
-            // --- AUTH LOGIC ---
             onAuthStateChanged(window.auth, async (user) => {
                 loadingScreen.classList.add('hidden');
                 if (user) {
@@ -260,7 +258,7 @@
                 } else {
                     authView.classList.remove('hidden');
                     appView.classList.add('hidden');
-                    currentUserData = {}; // Reset user data on logout
+                    currentUserData = {};
                 }
             });
             
@@ -297,7 +295,7 @@
                         throw new Error(err.error || 'Terjadi kesalahan saat registrasi.');
                     }
                     alert('Registrasi berhasil! Anda akan otomatis login setelah halaman dimuat ulang.');
-                    window.location.reload(); // Reload to trigger onAuthStateChanged
+                    window.location.reload();
                 } catch(error) {
                     alert(`Registrasi Gagal: ${error.message}`);
                 }
@@ -334,7 +332,6 @@
                 }
             }
             
-            // --- ADMIN AREA LOGIC ---
             adminAreaBtn.addEventListener('click', async () => {
                 adminView.classList.toggle('hidden');
                 if (!adminView.classList.contains('hidden')) {
@@ -398,7 +395,7 @@
                                 console.error(error);
                             }
                         } else {
-                            e.target.value = e.target.options[e.target.selectedIndex === 0 ? 1: 0].value; // revert
+                           loadAdminUsers(); // Revert selection by reloading
                         }
                     });
                 });
@@ -425,7 +422,6 @@
                 });
             }
 
-            // --- MAIN APP LOGIC ---
             topicInput.addEventListener('input', () => {
                 suggestTopicBtn.disabled = topicInput.value.trim() === '';
             });
