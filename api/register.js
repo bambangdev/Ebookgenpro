@@ -12,6 +12,8 @@ if (!getApps().length) {
   });
 }
 
+const ADMIN_EMAILS = ['poopandastore@gmail.com', 'kucingmona@gmail.com'];
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).send({ message: 'Only POST requests allowed' });
@@ -28,7 +30,7 @@ export default async function handler(req, res) {
     });
     
     // 2. Tentukan apakah user adalah admin
-    const isAdmin = ['poopandastore@gmail.com', 'kucingmona@gmail.com'].includes(email);
+    const isAdmin = ADMIN_EMAILS.includes(email);
     
     // 3. Siapkan data untuk disimpan di Firestore
     const userData = {
