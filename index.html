@@ -174,14 +174,14 @@
     </div>
     
     <script type="module">
-        // --- FIREBASE INITIALIZATION ---
         const firebaseConfig = {
-            apiKey: "GANTI_DENGAN_API_KEY_ANDA",
-            authDomain: "GANTI_DENGAN_AUTH_DOMAIN_ANDA",
-            projectId: "GANTI_DENGAN_PROJECT_ID_ANDA",
-            storageBucket: "GANTI_DENGAN_STORAGE_BUCKET_ANDA",
-            messagingSenderId: "GANTI_DENGAN_SENDER_ID_ANDA",
-            appId: "GANTI_DENGAN_APP_ID_ANDA"
+            apiKey: "AIzaSyDGti4p7YW-TnkoBya5a987ZqAAoz1hx-M",
+            authDomain: "ebookgenpro.firebaseapp.com",
+            projectId: "ebookgenpro",
+            storageBucket: "ebookgenpro.firebasestorage.app",
+            messagingSenderId: "65822110885",
+            appId: "1:65822110885:web:3a430b2f1b3341aef9094c",
+            measurementId: "G-JV13H8GSQX"
         };
         
         const firebaseScript = document.createElement('script');
@@ -225,7 +225,6 @@
             const adminUserList = document.getElementById('admin-user-list');
             const userTierDisplay = document.getElementById('user-tier');
             const userQuotaDisplay = document.getElementById('user-quota');
-
             const topicInput = document.getElementById('topic');
             const suggestTopicBtn = document.getElementById('suggest-topic-btn');
             const styleSelect = document.getElementById('style');
@@ -234,7 +233,6 @@
             const queueTableBody = document.getElementById('queue-table-body');
             const emptyQueueMsg = document.getElementById('empty-queue-msg');
             const processQueueBtn = document.getElementById('process-queue-btn');
-
             const ebookModal = document.getElementById('ebook-modal');
             const modalTitle = document.getElementById('modal-title');
             const modalBody = document.getElementById('modal-body-content');
@@ -269,7 +267,7 @@
                 signInWithEmailAndPassword(window.auth, email, password)
                     .catch(error => {
                         console.error("Login error:", error.code);
-                        if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
+                        if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-email') {
                             alert('Login Gagal: Email atau password salah. Silakan coba lagi atau register jika belum punya akun.');
                         } else {
                             alert(`Login Gagal: ${error.message}`);
@@ -395,7 +393,7 @@
                                 console.error(error);
                             }
                         } else {
-                           loadAdminUsers(); // Revert selection by reloading
+                           loadAdminUsers();
                         }
                     });
                 });
@@ -412,7 +410,7 @@
                                     body: JSON.stringify({ userId })
                                 });
                                 alert('Pengguna berhasil dihapus.');
-                                loadAdminUsers(); // Refresh list
+                                loadAdminUsers();
                             } catch(error) {
                                 alert('Gagal menghapus pengguna.');
                                 console.error(error);
@@ -482,7 +480,7 @@
                         try {
                             item.htmlContent = await generateEbook(item.topic, item.style, item.persona, token);
                             updateItemStatus(item.id, 'Selesai');
-                            await fetchAndDisplayUserData(user); // Refresh quota
+                            await fetchAndDisplayUserData(user);
                         } catch (error) {
                             console.error(`Error for "${item.topic}":`, error);
                             item.htmlContent = generateFallbackEbook(item.topic);
@@ -608,7 +606,7 @@
                 let ebookData = [];
                 for (const chapterTitle of chapters) {
                     const contentPrompt = `Anda adalah seorang penulis dengan persona sebagai **${persona}**. Tulis konten yang bersih dan terformat dengan baik untuk bab buku berjudul "${chapterTitle}" dari ebook bertopik "${topic}". Gunakan gaya bahasa "${style}". Pastikan ada struktur paragraf yang jelas. Panjang tulisan sekitar 400-500 kata.`;
-                    const contentResult = await callApi({ contents: [{ role: "user", parts: [{ text: contentPrompt }] }] }, token);
+                    const contentResult = await callApi({ contents: [{ role: "user", parts: [{ text: promptOutline }] }] }, token);
                     const chapterContent = contentResult.candidates[0].content.parts[0].text;
                     ebookData.push({ title: chapterTitle, content: chapterContent });
                 }
